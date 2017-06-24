@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
         ("brokers,b",    po::value<string>(&brokers)->required(), 
                          "the kafka broker list")
         ("group-id,g",   po::value<string>(&group_id),
-                         "the consumer group id to look for")
+                         "the consumer group id to be used")
         ;
 
     po::variables_map vm;
@@ -57,12 +57,14 @@ int main(int argc, char* argv[]) {
         // Disable auto commit
         { "enable.auto.commit", false }
     };
-    config.set_default_topic_configuration({{ "auto.offset.reset", "smallest" }});
 
     auto store = make_shared<ConsumerOffsetStore>();
+    auto on_eof = [&]() {
+        cout << "Reached EOF on all partitions\n";
+    };
     ConsumerOffsetReader reader(store, move(config));
     thread th([&]() {
-        reader.run();
+        reader.run(on_eof);
     });
 
     string consumer_group;

@@ -10,17 +10,29 @@ using std::string;
 using cppkafka::Configuration;
 using cppkafka::ConsumerDispatcher;
 using cppkafka::Message;
+using cppkafka::TopicPartition;
+using cppkafka::TopicPartitionList;
 
 namespace pirulo {
 
 PIRULO_CREATE_LOGGER("p.offsets");
 
+Configuration prepare_config(Configuration config) {
+    config.set_default_topic_configuration({{ "auto.offset.reset", "smallest" }});
+    return config;
+}
+
 ConsumerOffsetReader::ConsumerOffsetReader(StorePtr store, Configuration config) :
-    store_(move(store)), consumer_(move(config)) {
+    store_(move(store)), consumer_(prepare_config(move(config))) {
 
 }
 
-void ConsumerOffsetReader::run() {
+void ConsumerOffsetReader::run(const EofCallback& callback) {
+    consumer_.set_assignment_callback([&](const TopicPartitionList& topic_partitions) {
+        for (const TopicPartition& topic_partition : topic_partitions) {
+            pending_partitions_.emplace(topic_partition.get_partition());
+        }
+    });
     consumer_.subscribe({ "__consumer_offsets" });
     dispatcher.run(
         [&](Message msg) {
@@ -29,6 +41,13 @@ void ConsumerOffsetReader::run() {
             }
             catch (const ParseException&) {
                 LOG4CXX_WARN(logger, "Failed to parse consumer offset record");
+            }
+        },
+        [&](ConsumerDispatcher::EndOfFile, const TopicPartition& topic_partition) {
+            // If we reached EOF on all partitions, execute the EOF callback
+            if (pending_partitions_.erase(topic_partition.get_partition()) &&
+                pending_partitions_.empty()) {
+                callback();
             }
         }
     );
