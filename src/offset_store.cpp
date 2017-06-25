@@ -65,13 +65,23 @@ OffsetStore::get_consumer_offsets(const string& group_id) const {
     return output;
 }
 
-optional<uint64_t> OffsetStore::get_topic_offset(const string& topic, int partition) const {
+optional<int64_t> OffsetStore::get_topic_offset(const string& topic, int partition) const {
     lock_guard<mutex> _(topic_offsets_mutex_);
     auto iter = topic_offsets_.find({ topic, partition });
     if (iter == topic_offsets_.end()) {
         return boost::none;
     }
     return iter->second;
+}
+
+bool operator==(const OffsetStore::ConsumerOffset& lhs,
+                const OffsetStore::ConsumerOffset& rhs) {
+    return lhs.get_topic_partition() == rhs.get_topic_partition();
+}
+
+bool operator!=(const OffsetStore::ConsumerOffset& lhs,
+                const OffsetStore::ConsumerOffset& rhs) {
+    return !(lhs == rhs);
 }
 
 } // pirulo

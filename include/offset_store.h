@@ -30,8 +30,8 @@ public:
 
     std::vector<std::string> get_consumers() const;
     std::vector<ConsumerOffset> get_consumer_offsets(const std::string& group_id) const;
-    boost::optional<uint64_t> get_topic_offset(const std::string& topic,
-                                               int partition) const;
+    boost::optional<int64_t> get_topic_offset(const std::string& topic,
+                                              int partition) const;
 private:
     using TopicMap = std::map<cppkafka::TopicPartition, int64_t>;
     using ConsumerMap = std::unordered_map<std::string, TopicMap>;
@@ -41,5 +41,10 @@ private:
     mutable std::mutex consumer_offsets_mutex_;
     mutable std::mutex topic_offsets_mutex_;
 };
+
+bool operator==(const OffsetStore::ConsumerOffset& lhs,
+                const OffsetStore::ConsumerOffset& rhs);
+bool operator!=(const OffsetStore::ConsumerOffset& lhs,
+                const OffsetStore::ConsumerOffset& rhs);
 
 } // pirulo

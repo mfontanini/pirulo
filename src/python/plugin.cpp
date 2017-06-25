@@ -1,7 +1,6 @@
 #include <stdexcept>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include "python/plugin.h"
-#include "python/interoperability.h"
 #include "detail/logging.h"
 #include "offset_store.h"
 
@@ -11,21 +10,69 @@ using std::once_flag;
 using std::call_once;
 using std::runtime_error;
 
+using boost::optional;
+
 namespace python = boost::python;
 
 namespace pirulo {
+
+template <typename T>
+struct value_or_none {
+    static PyObject* convert(const optional<T>& value) {
+        if (value) {
+            return python::incref(python::object(*value).ptr());
+        }
+        else {
+            return Py_None;
+        }
+    }
+};
+
+void register_types() {
+    using python::to_python_converter;
+    using python::class_;
+    using python::no_init;
+    using python::make_function;
+    using python::return_internal_reference;
+    using python::vector_indexing_suite;
+
+    to_python_converter<optional<int64_t>, value_or_none<int64_t>>();
+
+    class_<OffsetStore::ConsumerOffset>("ConsumerOffset", no_init)
+        .add_property("group_id",
+                      make_function(&OffsetStore::ConsumerOffset::get_group_id,
+                                    return_internal_reference<>()))
+        .add_property("topic", +[](const OffsetStore::ConsumerOffset& o) {
+            return o.get_topic_partition().get_topic();
+        })
+        .add_property("partition", +[](const OffsetStore::ConsumerOffset& o) {
+            return o.get_topic_partition().get_partition();
+        })
+        .add_property("offset", +[](const OffsetStore::ConsumerOffset& o) {
+            return o.get_topic_partition().get_offset();
+        })
+        ;
+
+    class_<OffsetStore, boost::noncopyable>("OffsetStore", no_init)
+        .def("get_consumers", &OffsetStore::get_consumers)
+        .def("get_consumer_offsets", &OffsetStore::get_consumer_offsets)
+        .def("get_topic_offset", &OffsetStore::get_topic_offset);
+        ;
+
+    class_<vector<string>>("StringVector")
+        .def(vector_indexing_suite<vector<string>>())
+        ;
+
+    class_<vector<OffsetStore::ConsumerOffset>>("ConsumerOffsetVector")
+        .def(vector_indexing_suite<vector<OffsetStore::ConsumerOffset>>())
+        ;
+}
 
 void initialize_python() {
     static once_flag flag;
     call_once(flag, [&] {
         Py_Initialize();
-
-        python::class_<OffsetStore, boost::noncopyable>("OffsetStore", python::no_init)
-            .def("get_consumers", &OffsetStore::get_consumers);
-
-
-        python::class_<vector<string> >("StringVector")
-            .def(python::vector_indexing_suite<vector<string>>());
+        register_types();
     });
 }
 
