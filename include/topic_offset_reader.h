@@ -15,6 +15,8 @@ public:
 
     void run();
     void stop();
+
+    StorePtr get_store() const;
 private:
     using TopicPartitionCount = std::unordered_map<std::string, size_t>;
 

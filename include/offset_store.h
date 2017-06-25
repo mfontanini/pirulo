@@ -28,6 +28,7 @@ public:
                                int partition, uint64_t offset);
     void store_topic_offset(const std::string& topic, int partition, uint64_t offset);
 
+    std::vector<std::string> get_consumers() const;
     std::vector<ConsumerOffset> get_consumer_offsets(const std::string& group_id) const;
     boost::optional<uint64_t> get_topic_offset(const std::string& topic,
                                                int partition) const;

@@ -57,6 +57,10 @@ void ConsumerOffsetReader::stop() {
     dispatcher.stop();
 }
 
+ConsumerOffsetReader::StorePtr ConsumerOffsetReader::get_store() const {
+    return store_;
+}
+
 void ConsumerOffsetReader::handle_message(Message msg) {
     InputMemoryStream key_input(msg.get_key());
     uint16_t version = key_input.read_be<uint16_t>();

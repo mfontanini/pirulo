@@ -17,6 +17,8 @@ public:
 
     void run(const EofCallback& callback);
     void stop();
+
+    StorePtr get_store() const;
 private:
     void handle_message(cppkafka::Message msg);
 

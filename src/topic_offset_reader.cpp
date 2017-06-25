@@ -35,13 +35,17 @@ void TopicOffsetReader::run() {
     while (running_) {
         process();
 
-        sleep_for(seconds(30));
+        sleep_for(seconds(10));
     }
 }
 
 void TopicOffsetReader::stop() {
     running_ = false;
     thread_pool_.stop();
+}
+
+TopicOffsetReader::StorePtr TopicOffsetReader::get_store() const {
+    return store_;
 }
 
 void TopicOffsetReader::process() {

@@ -41,6 +41,15 @@ void OffsetStore::store_topic_offset(const string& topic, int partition,
     topic_offsets_[{topic, partition}] = offset;
 }
 
+vector<string> OffsetStore::get_consumers() const {
+    vector<string> output;
+    lock_guard<mutex> _(consumer_offsets_mutex_);
+    for (const auto& consumer_pair : consumer_offsets_) {
+        output.emplace_back(consumer_pair.first);
+    }
+    return output;
+}
+
 vector<OffsetStore::ConsumerOffset>
 OffsetStore::get_consumer_offsets(const string& group_id) const {
     lock_guard<mutex> _(consumer_offsets_mutex_);
