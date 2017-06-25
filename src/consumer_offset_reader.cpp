@@ -75,7 +75,7 @@ void ConsumerOffsetReader::handle_message(Message msg) {
         throw ParseException();
     }
     uint64_t offset = value_input.read_be<uint64_t>();
-    store_->store(group_id, topic, partition, offset);
+    store_->store_consumer_offset(group_id, topic, partition, offset);
 }
 
 } // pirulo

@@ -2,7 +2,7 @@
 #include <thread>
 #include <stdexcept>
 #include <boost/program_options.hpp>
-#include "consumer_offset_reader.h"
+#include "topic_offset_reader.h"
 #include "detail/logging.h"
 
 using std::cout;
@@ -14,9 +14,12 @@ using std::thread;
 using std::cin;
 using std::exception;
 
-using cppkafka::Configuration;
+using boost::optional;
 
-using pirulo::ConsumerOffsetReader;
+using cppkafka::Configuration;
+using cppkafka::TopicPartition;
+
+using pirulo::TopicOffsetReader;
 using pirulo::OffsetStore;
 using pirulo::logging::register_console_logger;
 
@@ -55,29 +58,24 @@ int main(int argc, char* argv[]) {
         { "metadata.broker.list", brokers },
         { "group.id", group_id },
         // Disable auto commit
-        { "enable.auto.commit", false }
+        { "enable.auto.commit", false },
     };
 
     auto store = make_shared<OffsetStore>();
-    auto on_eof = [&]() {
-        cout << "Reached EOF on all partitions\n";
-    };
-    ConsumerOffsetReader reader(store, move(config));
+    TopicOffsetReader reader(store, 2, move(config));
     thread th([&]() {
-        reader.run(on_eof);
+        reader.run();
     });
 
-    string consumer_group;
-    while (cin >> consumer_group) {
-        auto offsets = store->get_consumer_offsets(consumer_group);
-        if (offsets.empty()) {
-            cout << "Consumer not found\n";
+    string topic;
+    int partition;
+    while (cin >> topic >> partition) {
+        optional<uint64_t> offset = store->get_topic_offset(topic, partition);
+        if (!offset) {
+            cout << "Topic/partition not found\n";
         }
         else {
-            for (const auto& offset : offsets) {
-                cout << offset.get_topic_partition() << ": "
-                     << offset.get_topic_partition().get_offset() << endl;
-            }
+            cout << "Offset for " << TopicPartition(topic, partition) << ": " << *offset << endl;
         }
     }
 

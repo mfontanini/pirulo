@@ -4,13 +4,13 @@
 #include <set>
 #include <cppkafka/consumer.h>
 #include <cppkafka/utils/consumer_dispatcher.h>
-#include "consumer_offset_store.h"
+#include "offset_store.h"
 
 namespace pirulo {
 
 class ConsumerOffsetReader {
 public:
-    using StorePtr = std::shared_ptr<ConsumerOffsetStore>;
+    using StorePtr = std::shared_ptr<OffsetStore>;
     using EofCallback = std::function<void()>;
 
     ConsumerOffsetReader(StorePtr store, cppkafka::Configuration config);

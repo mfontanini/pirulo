@@ -1,6 +1,9 @@
 set(SOURCES
-    consumer_offset_store.cpp
+    offset_store.cpp
     consumer_offset_reader.cpp
+    topic_offset_reader.cpp
+
+    utils/thread_pool.cpp
 
     detail/logging.cpp
 )
