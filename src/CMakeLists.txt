@@ -10,4 +10,4 @@ set(SOURCES
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 add_library(pirulo-core ${SOURCES})
-add_subdirectory(executables)
+target_link_libraries(pirulo-core log4cxx cppkafka rdkafka boost_program_options pthread)
