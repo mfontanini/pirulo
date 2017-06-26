@@ -8,22 +8,12 @@
 #include <vector>
 #include <boost/optional.hpp>
 #include <cppkafka/topic_partition.h>
+#include "consumer_offset.h"
 
 namespace pirulo {
 
 class OffsetStore {
 public:
-    class ConsumerOffset {
-    public:
-        ConsumerOffset(std::string group_id, std::string topic, int partition,
-                       uint64_t offset);
-        const std::string& get_group_id() const;
-        const cppkafka::TopicPartition& get_topic_partition() const;
-    private:
-        std::string group_id_;
-        cppkafka::TopicPartition topic_partition_;
-    };
-
     void store_consumer_offset(const std::string& group_id, const std::string& topic,
                                int partition, uint64_t offset);
     void store_topic_offset(const std::string& topic, int partition, uint64_t offset);
@@ -41,10 +31,5 @@ private:
     mutable std::mutex consumer_offsets_mutex_;
     mutable std::mutex topic_offsets_mutex_;
 };
-
-bool operator==(const OffsetStore::ConsumerOffset& lhs,
-                const OffsetStore::ConsumerOffset& rhs);
-bool operator!=(const OffsetStore::ConsumerOffset& lhs,
-                const OffsetStore::ConsumerOffset& rhs);
 
 } // pirulo

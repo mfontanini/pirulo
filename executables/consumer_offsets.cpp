@@ -14,6 +14,8 @@ using std::thread;
 using std::cin;
 using std::exception;
 
+using std::chrono::seconds;
+
 using cppkafka::Configuration;
 
 using pirulo::ConsumerOffsetReader;
@@ -62,7 +64,7 @@ int main(int argc, char* argv[]) {
     auto on_eof = [&]() {
         cout << "Reached EOF on all partitions\n";
     };
-    ConsumerOffsetReader reader(store, move(config));
+    ConsumerOffsetReader reader(store, seconds(10), move(config));
     thread th([&]() {
         reader.run(on_eof);
     });

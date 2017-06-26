@@ -87,7 +87,7 @@ TopicOffsetReader::TopicPartitionCount TopicOffsetReader::load_metadata() {
 }
 
 void TopicOffsetReader::process_topic_partition(const TopicPartition& topic_partition) {
-    LOG4CXX_DEBUG(logger, "Fetching offset for " << topic_partition);
+    LOG4CXX_TRACE(logger, "Fetching offset for " << topic_partition);
     uint64_t offset;
     try {
         tie(ignore, offset) = consumer_.query_offsets(topic_partition);

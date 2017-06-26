@@ -7,6 +7,8 @@
 using std::move;
 using std::string;
 
+using std::chrono::milliseconds;
+
 using cppkafka::Configuration;
 using cppkafka::ConsumerDispatcher;
 using cppkafka::Message;
@@ -22,8 +24,10 @@ Configuration prepare_config(Configuration config) {
     return config;
 }
 
-ConsumerOffsetReader::ConsumerOffsetReader(StorePtr store, Configuration config) :
-    store_(move(store)), consumer_(prepare_config(move(config))) {
+ConsumerOffsetReader::ConsumerOffsetReader(StorePtr store, milliseconds consumer_offset_cool_down,
+                                           Configuration config) :
+    store_(move(store)), consumer_(prepare_config(move(config))),
+    observer_(consumer_offset_cool_down) {
 
 }
 
@@ -34,7 +38,7 @@ void ConsumerOffsetReader::run(const EofCallback& callback) {
         }
     });
     consumer_.subscribe({ "__consumer_offsets" });
-    dispatcher.run(
+    dispatcher_.run(
         [&](Message msg) {
             try {
                 handle_message(move(msg));
@@ -48,13 +52,24 @@ void ConsumerOffsetReader::run(const EofCallback& callback) {
             if (pending_partitions_.erase(topic_partition.get_partition()) &&
                 pending_partitions_.empty()) {
                 callback();
+
+                // Enable notifications for new commits
+                notifications_enabled_ = true;
             }
         }
     );
 }
 
 void ConsumerOffsetReader::stop() {
-    dispatcher.stop();
+    dispatcher_.stop();
+}
+
+void ConsumerOffsetReader::watch_commits(const string& topic, int partition,
+                                         TopicCommitCallback callback) {
+    auto wrapped_callback = [callback](const TopicPartition& topic_partition) {
+        callback(topic_partition.get_topic(), topic_partition.get_partition());
+    };
+    observer_.observe({ topic, partition }, move(wrapped_callback));
 }
 
 ConsumerOffsetReader::StorePtr ConsumerOffsetReader::get_store() const {
@@ -70,7 +85,7 @@ void ConsumerOffsetReader::handle_message(Message msg) {
     }
     string group_id = key_input.read<string>();
     string topic = key_input.read<string>();
-    uint32_t partition = key_input.read_be<uint32_t>();
+    int partition = key_input.read_be<uint32_t>();
 
     InputMemoryStream value_input(msg.get_payload());
     // Value version
@@ -80,6 +95,10 @@ void ConsumerOffsetReader::handle_message(Message msg) {
     }
     uint64_t offset = value_input.read_be<uint64_t>();
     store_->store_consumer_offset(group_id, topic, partition, offset);
+
+    if (notifications_enabled_) {
+        observer_.notify({ topic, partition });
+    }
 }
 
 } // pirulo

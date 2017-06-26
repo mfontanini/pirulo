@@ -16,8 +16,8 @@ Application::Application(TopicOffsetReaderPtr topic_reader,
 }
 
 void Application::run() {
-    // When we finish loading the __consumer_offsets topic, launch all plugins
     auto on_consumer_offset_eof = [&] {
+        // When we finish loading the __consumer_offsets topic, launch all plugins
         const auto store = consumer_reader_->get_store();
         for (auto& plugin_ptr : plugins_) {
             plugin_ptr->launch(store);

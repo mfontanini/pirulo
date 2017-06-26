@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
     string topic;
     int partition;
     while (cin >> topic >> partition) {
-        optional<uint64_t> offset = store->get_topic_offset(topic, partition);
+        optional<int64_t> offset = store->get_topic_offset(topic, partition);
         if (!offset) {
             cout << "Topic/partition not found\n";
         }

@@ -4,30 +4,15 @@ using std::string;
 using std::mutex;
 using std::lock_guard;
 using std::vector;
+using std::move;
+
+using std::chrono::milliseconds;
 
 using boost::optional;
 
 using cppkafka::TopicPartition;
 
 namespace pirulo {
-
-// ConsumerOffset
-
-OffsetStore::ConsumerOffset::ConsumerOffset(string group_id, string topic,
-                                            int partition, uint64_t offset)
-: group_id_(move(group_id)), topic_partition_(move(topic), partition, offset) {
-
-}
-
-const string& OffsetStore::ConsumerOffset::get_group_id() const {
-    return group_id_;
-}
-
-const TopicPartition& OffsetStore::ConsumerOffset::get_topic_partition() const {
-    return topic_partition_;
-}
-
-// OffsetStore
 
 void OffsetStore::store_consumer_offset(const string& group_id, const string& topic,
                                         int partition, uint64_t offset) {
@@ -50,8 +35,7 @@ vector<string> OffsetStore::get_consumers() const {
     return output;
 }
 
-vector<OffsetStore::ConsumerOffset>
-OffsetStore::get_consumer_offsets(const string& group_id) const {
+vector<ConsumerOffset> OffsetStore::get_consumer_offsets(const string& group_id) const {
     lock_guard<mutex> _(consumer_offsets_mutex_);
     auto iter = consumer_offsets_.find(group_id);
     if (iter == consumer_offsets_.end()) {
@@ -72,16 +56,6 @@ optional<int64_t> OffsetStore::get_topic_offset(const string& topic, int partiti
         return boost::none;
     }
     return iter->second;
-}
-
-bool operator==(const OffsetStore::ConsumerOffset& lhs,
-                const OffsetStore::ConsumerOffset& rhs) {
-    return lhs.get_topic_partition() == rhs.get_topic_partition();
-}
-
-bool operator!=(const OffsetStore::ConsumerOffset& lhs,
-                const OffsetStore::ConsumerOffset& rhs) {
-    return !(lhs == rhs);
 }
 
 } // pirulo

@@ -18,6 +18,8 @@ using std::exception;
 using std::unique_ptr;
 using std::function;
 
+using std::chrono::seconds;
+
 using cppkafka::Configuration;
 
 using pirulo::Application;
@@ -70,7 +72,8 @@ int main(int argc, char* argv[]) {
     };
 
     auto store = make_shared<OffsetStore>();
-    unique_ptr<ConsumerOffsetReader> consumer_reader(new ConsumerOffsetReader(store, config));
+    unique_ptr<ConsumerOffsetReader> consumer_reader(new ConsumerOffsetReader(store, seconds(10),
+                                                                              config));
     unique_ptr<TopicOffsetReader> topic_reader(new TopicOffsetReader(store, 2, config));
 
     Application app(move(topic_reader), move(consumer_reader));

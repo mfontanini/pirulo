@@ -38,17 +38,17 @@ void register_types() {
 
     to_python_converter<optional<int64_t>, value_or_none<int64_t>>();
 
-    class_<OffsetStore::ConsumerOffset>("ConsumerOffset", no_init)
+    class_<ConsumerOffset>("ConsumerOffset", no_init)
         .add_property("group_id",
-                      make_function(&OffsetStore::ConsumerOffset::get_group_id,
+                      make_function(&ConsumerOffset::get_group_id,
                                     return_internal_reference<>()))
-        .add_property("topic", +[](const OffsetStore::ConsumerOffset& o) {
+        .add_property("topic", +[](const ConsumerOffset& o) {
             return o.get_topic_partition().get_topic();
         })
-        .add_property("partition", +[](const OffsetStore::ConsumerOffset& o) {
+        .add_property("partition", +[](const ConsumerOffset& o) {
             return o.get_topic_partition().get_partition();
         })
-        .add_property("offset", +[](const OffsetStore::ConsumerOffset& o) {
+        .add_property("offset", +[](const ConsumerOffset& o) {
             return o.get_topic_partition().get_offset();
         })
         ;
@@ -63,8 +63,8 @@ void register_types() {
         .def(vector_indexing_suite<vector<string>>())
         ;
 
-    class_<vector<OffsetStore::ConsumerOffset>>("ConsumerOffsetVector")
-        .def(vector_indexing_suite<vector<OffsetStore::ConsumerOffset>>())
+    class_<vector<ConsumerOffset>>("ConsumerOffsetVector")
+        .def(vector_indexing_suite<vector<ConsumerOffset>>())
         ;
 }
 
