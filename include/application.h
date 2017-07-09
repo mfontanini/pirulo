@@ -10,8 +10,8 @@ namespace pirulo {
 
 class Application {
 public:
-    using TopicOffsetReaderPtr = std::unique_ptr<TopicOffsetReader>;
-    using ConsumerOffsetReaderPtr = std::unique_ptr<ConsumerOffsetReader>;
+    using TopicOffsetReaderPtr = std::shared_ptr<TopicOffsetReader>;
+    using ConsumerOffsetReaderPtr = std::shared_ptr<ConsumerOffsetReader>;
     using PluginPtr = std::unique_ptr<PluginBase>;
 
     Application(TopicOffsetReaderPtr topic_reader, ConsumerOffsetReaderPtr consumer_reader);

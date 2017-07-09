@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    register_console_logger();
+    register_console_logger("", "TRACE");
 
     // Construct the configuration
     Configuration config = {
@@ -72,12 +72,11 @@ int main(int argc, char* argv[]) {
     };
 
     auto store = make_shared<OffsetStore>();
-    unique_ptr<ConsumerOffsetReader> consumer_reader(new ConsumerOffsetReader(store, seconds(10),
-                                                                              config));
-    unique_ptr<TopicOffsetReader> topic_reader(new TopicOffsetReader(store, 2, config));
+    auto consumer_reader = make_shared<ConsumerOffsetReader>(store, seconds(10), config);
+    auto topic_reader = make_shared<TopicOffsetReader>(store, 2, consumer_reader, config);
 
     Application app(move(topic_reader), move(consumer_reader));
-    app.add_plugin(unique_ptr<PythonPlugin>(new PythonPlugin("/tmp/test.py")));
+    //app.add_plugin(unique_ptr<PythonPlugin>(new PythonPlugin("/tmp/test.py")));
 
     signal_handler = [&] {
         app.stop();

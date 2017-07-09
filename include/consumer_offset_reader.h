@@ -25,7 +25,7 @@ public:
 
     StorePtr get_store() const;
 private:
-    void handle_message(cppkafka::Message msg);
+    void handle_message(const cppkafka::Message& msg);
 
     StorePtr store_;
     cppkafka::Consumer consumer_;

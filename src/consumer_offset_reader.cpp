@@ -41,7 +41,9 @@ void ConsumerOffsetReader::run(const EofCallback& callback) {
     dispatcher_.run(
         [&](Message msg) {
             try {
-                handle_message(move(msg));
+                if (msg.get_payload()) {
+                    handle_message(msg);
+                }
             }
             catch (const ParseException&) {
                 LOG4CXX_WARN(logger, "Failed to parse consumer offset record");
@@ -76,11 +78,10 @@ ConsumerOffsetReader::StorePtr ConsumerOffsetReader::get_store() const {
     return store_;
 }
 
-void ConsumerOffsetReader::handle_message(Message msg) {
+void ConsumerOffsetReader::handle_message(const Message& msg) {
     InputMemoryStream key_input(msg.get_key());
     uint16_t version = key_input.read_be<uint16_t>();
     if (version > 1) {
-        LOG4CXX_TRACE(logger, "Ignoring key message version: " << version);
         return;
     }
     string group_id = key_input.read<string>();

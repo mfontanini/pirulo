@@ -9,6 +9,7 @@ set(SOURCES
     application.cpp
     
     utils/thread_pool.cpp
+    utils/task_scheduler.cpp
 
     detail/logging.cpp
 
