@@ -37,6 +37,8 @@ void ConsumerOffsetReader::run(const EofCallback& callback) {
             pending_partitions_.emplace(topic_partition.get_partition());
         }
     });
+    LOG4CXX_INFO(logger, "Starting loading consumer offsets");
+    
     consumer_.subscribe({ "__consumer_offsets" });
     dispatcher_.run(
         [&](Message msg) {
@@ -53,6 +55,7 @@ void ConsumerOffsetReader::run(const EofCallback& callback) {
             // If we reached EOF on all partitions, execute the EOF callback
             if (pending_partitions_.erase(topic_partition.get_partition()) &&
                 pending_partitions_.empty()) {
+                LOG4CXX_INFO(logger, "Finished loading consumer offsets");
                 callback();
 
                 // Enable notifications for new commits

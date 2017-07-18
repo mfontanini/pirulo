@@ -10,6 +10,7 @@ using std::thread;
 using std::move;
 using std::find_if;
 using std::upper_bound;
+using std::min;
 using std::max;
 
 using std::chrono::seconds;
@@ -33,8 +34,12 @@ TaskScheduler::~TaskScheduler() {
 TaskScheduler::TaskId TaskScheduler::add_task(Task task, Duration maximum_offset) {
     lock_guard<mutex> _(tasks_mutex_);
     TaskId task_id = current_task_id_++;
-    auto iter = tasks_.emplace(task_id, TaskMetadata{ move(task), tasks_queue_.end(),
-                                                      maximum_offset, 1.0 }).first;
+
+    // Construct the new task and insert it
+    TaskMetadata task_meta{ move(task), tasks_queue_.end(), ClockType::now(),
+                            maximum_offset, 1.0 };
+    auto iter = tasks_.emplace(task_id, move(task_meta)).first;
+
     // Schedule and update the stored iterator
     iter->second.queue_iterator = schedule_task(task_id, iter->second);
     return task_id;
@@ -59,16 +64,19 @@ void TaskScheduler::set_priority(TaskId id, double priority) {
     if (iter == tasks_.end()) {
         throw Exception("Task not found");
     }
+    const auto now = ClockType::now();
     TaskMetadata& meta = iter->second; 
     const double priority_diff = priority - meta.priority;
+
+    // Update the priority and the pariority set time to now
     meta.priority = priority;
+    meta.last_priority_set_time = now;
     
-    const TaskExecutionInstance& current_instance = *meta.queue_iterator;
-    const auto now = ClockType::now();
     // Re-schedule this task if either:
     // * The prioity value is higher (meaning the priority is lower)
     // * The priority is lower but the task is already scheduled for more than our minimum
     // re-schedule time ahead
+    const TaskExecutionInstance& current_instance = *meta.queue_iterator;
     if (priority_diff < 0 || now + minimum_reschedule_ < current_instance.scheduled_for) {
         remove_scheduled_instance(id);
         meta.queue_iterator = schedule_task(id, meta);
@@ -139,11 +147,23 @@ void TaskScheduler::process_tasks() {
         }
         TaskExecutionInstance instance = move(tasks_queue_.front());
         tasks_queue_.pop_front();
+        // Refresh the current wake_up_time
+        now = ClockType::now();
 
         // Before leaving the critical section, re-schedule the task
         TaskMetadata& meta = tasks_.at(instance.task_id);
-        instance.scheduled_at = ClockType::now();
+        instance.scheduled_at = now;
         instance.scheduled_for = now + get_schedule_delta(meta);
+        // If we're past our priority adjustment offset, this means the priority hasn't changed
+        // in a while. Update it accordingly
+        if (meta.last_priority_set_time + priority_adjustment_offset_ < now) {
+            const double new_priority = min(1.0, meta.priority * 2.0);
+            if (new_priority != meta.priority) {
+                meta.priority = new_priority;
+                LOG4CXX_TRACE(logger, "Set priority for task " << instance.task_id << " to "
+                              << meta.priority);
+            }
+        }
         meta.queue_iterator = schedule_task(instance.task_id, meta);
 
         // Execute the task outside of the critical section

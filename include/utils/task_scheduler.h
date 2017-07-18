@@ -38,6 +38,7 @@ private:
     struct TaskMetadata {
         Task task;
         TaskQueue::iterator queue_iterator;
+        ClockType::time_point last_priority_set_time;
         Duration maximum_offset;
         double priority;
     };
@@ -53,6 +54,7 @@ private:
     TaskId current_task_id_{0};
     std::thread process_thread_;
     Duration minimum_reschedule_ = std::chrono::seconds(10);
+    Duration priority_adjustment_offset_ = std::chrono::seconds(60);
     TaskQueue tasks_queue_;
     mutable std::mutex tasks_mutex_;
     std::condition_variable tasks_condition_;
