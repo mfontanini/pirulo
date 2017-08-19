@@ -16,6 +16,7 @@ using std::this_thread::sleep_for;
 
 using std::chrono::seconds;
 
+using cppkafka::Consumer;
 using cppkafka::Message;
 using cppkafka::Configuration;
 using cppkafka::Metadata;
@@ -30,7 +31,7 @@ PIRULO_CREATE_LOGGER("p.topics");
 TopicOffsetReader::TopicOffsetReader(StorePtr store, size_t thread_count,
                                      ConsumerOffsetReaderPtr consumer_reader,
                                      Configuration config)
-: consumer_(move(config)),store_(move(store)), thread_pool_(thread_count),
+: consumer_pool_(thread_count, move(config)),store_(move(store)), thread_pool_(thread_count),
   consumer_offset_reader_(move(consumer_reader)) {
 
 }
@@ -127,14 +128,15 @@ TopicPartitionList TopicOffsetReader::get_new_topic_partitions(const TopicPartit
 }
 
 TopicOffsetReader::TopicPartitionCount TopicOffsetReader::load_metadata() {
-    // Load all existing topic names and store them atomically
-    Metadata md = consumer_.get_metadata();
-
+    // Load all existing topic names
     TopicPartitionCount topics;
-    for (const TopicMetadata& topic_metadata : md.get_topics()) {
-        topics.emplace(topic_metadata.get_name(),
-                       topic_metadata.get_partitions().size());
-    }
+    consumer_pool_.acquire_consumer([&](Consumer& consumer) {
+        Metadata md = consumer.get_metadata();
+        for (const TopicMetadata& topic_metadata : md.get_topics()) {
+            topics.emplace(topic_metadata.get_name(),
+                           topic_metadata.get_partitions().size());
+        }
+    });
     return topics;
 }
 
@@ -155,9 +157,11 @@ void TopicOffsetReader::process_topic_partition(const TopicPartition& topic_part
     LOG4CXX_TRACE(logger, "Fetching offset for " << topic_partition);
     uint64_t offset;
     try {
-        tie(ignore, offset) = consumer_.query_offsets(topic_partition);
-        store_->store_topic_offset(topic_partition.get_topic(), topic_partition.get_partition(),
-                                   offset);
+        consumer_pool_.acquire_consumer([&](Consumer& consumer) {
+            tie(ignore, offset) = consumer.query_offsets(topic_partition);
+            store_->store_topic_offset(topic_partition.get_topic(),
+                                       topic_partition.get_partition(), offset);
+        });
     }
     catch (const cppkafka::Exception& ex) {
         LOG4CXX_ERROR(logger, "Failed to fetch offsets for " << topic_partition

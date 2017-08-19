@@ -8,6 +8,7 @@
 #include "utils/task_scheduler.h"
 #include "offset_store.h"
 #include "consumer_offset_reader.h"
+#include "consumer_pool.h"
 
 namespace pirulo {
 
@@ -39,7 +40,7 @@ private:
     void process_topic_partition(const cppkafka::TopicPartition& topic_partition);
     void on_commit(const std::string& topic, int partition);
 
-    cppkafka::Consumer consumer_;
+    ConsumerPool consumer_pool_;
     StorePtr store_;
     ThreadPool thread_pool_;
     TaskScheduler task_scheduler_;

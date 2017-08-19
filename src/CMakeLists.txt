@@ -6,6 +6,7 @@ set(SOURCES
     consumer_offset_reader.cpp
     topic_offset_reader.cpp
     plugin_base.cpp
+    consumer_pool.cpp
     application.cpp
     
     utils/thread_pool.cpp
