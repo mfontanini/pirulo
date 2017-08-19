@@ -99,6 +99,14 @@ void register_types() {
                 });
             });
         })
+        .def("on_consumer_commit", +[](OffsetStore& store, const string& group_id,
+                                       const object& callback) {
+            store.on_consumer_commit(group_id, [=](const string& group_id) {
+                safe_exec([&]() {
+                    call<void>(callback.ptr(), group_id);
+                });
+            });
+        })
         ;
 
     class_<vector<string>>("StringVector")

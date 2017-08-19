@@ -6,6 +6,7 @@ using std::lock_guard;
 using std::vector;
 using std::move;
 
+using std::chrono::seconds;
 using std::chrono::milliseconds;
 
 using boost::optional;
@@ -16,13 +17,29 @@ namespace pirulo {
 
 static const int NEW_CONSUMER_ID = 0;
 
+// TODO: don't hardcode these constants
+OffsetStore::OffsetStore()
+: consumer_commit_observer_(seconds(10)) {
+
+}
+
 void OffsetStore::store_consumer_offset(const string& group_id, const string& topic,
                                         int partition, uint64_t offset) {
     {
         lock_guard<mutex> _(consumer_offsets_mutex_);
         consumer_offsets_[group_id][{ topic, partition }] = offset;
     }
-    new_consumer_observer_.notify(NEW_CONSUMER_ID, group_id);
+
+    if (!notifications_enabled_) {
+        return;
+    }
+
+    // Notify that there was a new commit for this consumer group
+    consumer_commit_observer_.notify(group_id);
+    // If this is a new consumer group, notify
+    if (consumers_.insert(group_id).second) {
+        new_consumer_observer_.notify(NEW_CONSUMER_ID, group_id);
+    }
 }
 
 void OffsetStore::store_topic_offset(const string& topic, int partition,
@@ -35,6 +52,14 @@ void OffsetStore::on_new_consumer(ConsumerCallback callback) {
     new_consumer_observer_.observe(NEW_CONSUMER_ID, [=](int, const string& group_id) {
         callback(group_id);
     });
+}
+
+void OffsetStore::on_consumer_commit(const string& group_id, ConsumerCallback callback) {
+    consumer_commit_observer_.observe(group_id, move(callback));
+}
+
+void OffsetStore::enable_notifications() {
+    notifications_enabled_ = true;
 }
 
 vector<string> OffsetStore::get_consumers() const {
