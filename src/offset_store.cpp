@@ -35,7 +35,7 @@ void OffsetStore::store_consumer_offset(const string& group_id, const string& to
     }
 
     // Notify that there was a new commit for this consumer group
-    consumer_commit_observer_.notify(group_id);
+    consumer_commit_observer_.notify(group_id, topic, partition, offset);
     // If this is a new consumer group, notify
     if (consumers_.insert(group_id).second) {
         new_consumer_observer_.notify(NEW_CONSUMER_ID, group_id);
@@ -54,7 +54,7 @@ void OffsetStore::on_new_consumer(ConsumerCallback callback) {
     });
 }
 
-void OffsetStore::on_consumer_commit(const string& group_id, ConsumerCallback callback) {
+void OffsetStore::on_consumer_commit(const string& group_id, ConsumerCommitCallback callback) {
     consumer_commit_observer_.observe(group_id, move(callback));
 }
 

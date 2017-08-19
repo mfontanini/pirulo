@@ -14,5 +14,10 @@ class Plugin:
         self.log_message('New consumer {0} found'.format(group_id))
         self.offset_store.on_consumer_commit(group_id, self.handle_consumer_commit)
 
-    def handle_consumer_commit(self, group_id):
-        self.log_message('Consumer {0} committed'.format(group_id))
+    def handle_consumer_commit(self, group_id, topic, partition, offset):
+        self.log_message('Consumer {0} committed to {1}/{2} offset {3}'.format(
+            group_id,
+            topic,
+            partition,
+            offset
+        ))

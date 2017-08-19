@@ -18,6 +18,10 @@ namespace pirulo {
 class OffsetStore {
 public:
     using ConsumerCallback = std::function<void(const std::string& group_id)>;
+    using ConsumerCommitCallback = std::function<void(const std::string& group_id,
+                                                      const std::string& topic,
+                                                      int partition,
+                                                      uint64_t offset)>;
 
     OffsetStore();
 
@@ -25,7 +29,7 @@ public:
                                int partition, uint64_t offset);
     void store_topic_offset(const std::string& topic, int partition, uint64_t offset);
     void on_new_consumer(ConsumerCallback callback);
-    void on_consumer_commit(const std::string& group_id, ConsumerCallback callback);
+    void on_consumer_commit(const std::string& group_id, ConsumerCommitCallback callback);
 
     void enable_notifications();
 
@@ -42,7 +46,7 @@ private:
     TopicMap topic_offsets_;
     ConsumerSet consumers_;
     Observer<int, std::string> new_consumer_observer_;
-    Observer<std::string> consumer_commit_observer_;
+    Observer<std::string, std::string, int, uint64_t> consumer_commit_observer_;
     std::string new_consumer_id_;
     mutable std::mutex consumer_offsets_mutex_;
     mutable std::mutex topic_offsets_mutex_;
