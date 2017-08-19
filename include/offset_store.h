@@ -6,17 +6,22 @@
 #include <map>
 #include <mutex>
 #include <vector>
+#include <functional>
 #include <boost/optional.hpp>
 #include <cppkafka/topic_partition.h>
 #include "consumer_offset.h"
+#include "utils/observer.h"
 
 namespace pirulo {
 
 class OffsetStore {
 public:
+    using ConsumerCallback = std::function<void(const std::string& group_id)>;
+
     void store_consumer_offset(const std::string& group_id, const std::string& topic,
                                int partition, uint64_t offset);
     void store_topic_offset(const std::string& topic, int partition, uint64_t offset);
+    void on_new_consumer(ConsumerCallback callback);
 
     std::vector<std::string> get_consumers() const;
     std::vector<ConsumerOffset> get_consumer_offsets(const std::string& group_id) const;
@@ -28,6 +33,8 @@ private:
 
     ConsumerMap consumer_offsets_;
     TopicMap topic_offsets_;
+    Observer<int, std::string> new_consumer_observer_;
+    std::string new_consumer_id_;
     mutable std::mutex consumer_offsets_mutex_;
     mutable std::mutex topic_offsets_mutex_;
 };

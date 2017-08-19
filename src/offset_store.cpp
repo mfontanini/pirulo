@@ -14,16 +14,27 @@ using cppkafka::TopicPartition;
 
 namespace pirulo {
 
+static const int NEW_CONSUMER_ID = 0;
+
 void OffsetStore::store_consumer_offset(const string& group_id, const string& topic,
                                         int partition, uint64_t offset) {
-    lock_guard<mutex> _(consumer_offsets_mutex_);
-    consumer_offsets_[group_id][{ topic, partition }] = offset;
+    {
+        lock_guard<mutex> _(consumer_offsets_mutex_);
+        consumer_offsets_[group_id][{ topic, partition }] = offset;
+    }
+    new_consumer_observer_.notify(NEW_CONSUMER_ID, group_id);
 }
 
 void OffsetStore::store_topic_offset(const string& topic, int partition,
                                      uint64_t offset) {
     lock_guard<mutex> _(topic_offsets_mutex_);
     topic_offsets_[{topic, partition}] = offset;
+}
+
+void OffsetStore::on_new_consumer(ConsumerCallback callback) {
+    new_consumer_observer_.observe(NEW_CONSUMER_ID, [=](int, const string& group_id) {
+        callback(group_id);
+    });
 }
 
 vector<string> OffsetStore::get_consumers() const {

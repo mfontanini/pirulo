@@ -16,6 +16,8 @@ namespace python = boost::python;
 
 namespace pirulo {
 
+PIRULO_CREATE_LOGGER("p.python");
+
 template <typename T>
 struct value_or_none {
     static PyObject* convert(const optional<T>& value) {
@@ -28,6 +30,37 @@ struct value_or_none {
     }
 };
 
+// Taken from https://stackoverflow.com/questions/1418015/how-to-get-python-exception-text
+string handle_pyerror() {
+    using namespace boost::python;
+    using namespace boost;
+
+    PyObject *exc, *val, *tb;
+    object formatted_list, formatted;
+    PyErr_Fetch(&exc,&val,&tb);
+    handle<> hexc(exc),hval(allow_null(val)),htb(allow_null(tb)); 
+    object traceback(import("traceback"));
+    if (!tb) {
+        object format_exception_only(traceback.attr("format_exception_only"));
+        formatted_list = format_exception_only(hexc,hval);
+    } else {
+        object format_exception(traceback.attr("format_exception"));
+        formatted_list = format_exception(hexc,hval,htb);
+    }
+    formatted = str("\n").join(formatted_list);
+    return extract<string>(formatted);
+}
+
+template <typename Functor>
+void safe_exec(const Functor& python_code) {
+    try {
+        python_code();
+    }
+    catch (const python::error_already_set& ex) {
+        LOG4CXX_ERROR(logger, "Error executing python callback: " << handle_pyerror());
+    }
+}
+
 void register_types() {
     using python::to_python_converter;
     using python::class_;
@@ -35,6 +68,8 @@ void register_types() {
     using python::make_function;
     using python::return_internal_reference;
     using python::vector_indexing_suite;
+    using python::object;
+    using python::call;
 
     to_python_converter<optional<int64_t>, value_or_none<int64_t>>();
 
@@ -56,7 +91,14 @@ void register_types() {
     class_<OffsetStore, boost::noncopyable>("OffsetStore", no_init)
         .def("get_consumers", &OffsetStore::get_consumers)
         .def("get_consumer_offsets", &OffsetStore::get_consumer_offsets)
-        .def("get_topic_offset", &OffsetStore::get_topic_offset);
+        .def("get_topic_offset", &OffsetStore::get_topic_offset)
+        .def("on_new_consumer", +[](OffsetStore& store, const object& callback) {
+            store.on_new_consumer([=](const string& group_id) {
+                safe_exec([&]() {
+                    call<void>(callback.ptr(), group_id);
+                });
+            });
+        })
         ;
 
     class_<vector<string>>("StringVector")
@@ -75,30 +117,6 @@ void initialize_python() {
         register_types();
     });
 }
-
-// Taken from https://stackoverflow.com/questions/1418015/how-to-get-python-exception-text
-string handle_pyerror()
-{
-    using namespace boost::python;
-    using namespace boost;
-
-    PyObject *exc, *val, *tb;
-    object formatted_list, formatted;
-    PyErr_Fetch(&exc,&val,&tb);
-    handle<> hexc(exc),hval(allow_null(val)),htb(allow_null(tb)); 
-    object traceback(import("traceback"));
-    if (!tb) {
-        object format_exception_only(traceback.attr("format_exception_only"));
-        formatted_list = format_exception_only(hexc,hval);
-    } else {
-        object format_exception(traceback.attr("format_exception"));
-        formatted_list = format_exception(hexc,hval,htb);
-    }
-    formatted = str("\n").join(formatted_list);
-    return extract<string>(formatted);
-}
-
-PIRULO_CREATE_LOGGER("p.python");
 
 PythonPlugin::PythonPlugin(const string& file_path) {
     initialize_python();
