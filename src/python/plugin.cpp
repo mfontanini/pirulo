@@ -92,10 +92,18 @@ void register_types() {
         .def("get_consumers", &OffsetStore::get_consumers)
         .def("get_consumer_offsets", &OffsetStore::get_consumer_offsets)
         .def("get_topic_offset", &OffsetStore::get_topic_offset)
+        .def("get_topics", &OffsetStore::get_topics)
         .def("on_new_consumer", +[](OffsetStore& store, const object& callback) {
             store.on_new_consumer([=](const string& group_id) {
                 safe_exec([&]() {
                     call<void>(callback.ptr(), group_id);
+                });
+            });
+        })
+        .def("on_new_topic", +[](OffsetStore& store, const object& callback) {
+            store.on_new_topic([=](const string& topic) {
+                safe_exec([&]() {
+                    call<void>(callback.ptr(), topic);
                 });
             });
         })
@@ -105,6 +113,15 @@ void register_types() {
                                                    int partition, uint64_t offset) {
                 safe_exec([&]() {
                     call<void>(callback.ptr(), group_id, topic, partition, offset);
+                });
+            });
+        })
+        .def("on_topic_message", +[](OffsetStore& store, const string& topic,
+                                     const object& callback) {
+            store.on_topic_message(topic, [=](const string& topic, int partition,
+                                              uint64_t offset) {
+                safe_exec([&]() {
+                    call<void>(callback.ptr(), topic, partition, offset);
                 });
             });
         })

@@ -18,10 +18,14 @@ namespace pirulo {
 class OffsetStore {
 public:
     using ConsumerCallback = std::function<void(const std::string& group_id)>;
+    using TopicCallback = std::function<void(const std::string& topic_name)>;
     using ConsumerCommitCallback = std::function<void(const std::string& group_id,
                                                       const std::string& topic,
                                                       int partition,
                                                       uint64_t offset)>;
+    using TopicMessageCallback = std::function<void(const std::string& topic,
+                                                    int partition,
+                                                    uint64_t offset)>;
 
     OffsetStore();
 
@@ -29,7 +33,9 @@ public:
                                int partition, uint64_t offset);
     void store_topic_offset(const std::string& topic, int partition, uint64_t offset);
     void on_new_consumer(ConsumerCallback callback);
+    void on_new_topic(TopicCallback callback);
     void on_consumer_commit(const std::string& group_id, ConsumerCommitCallback callback);
+    void on_topic_message(const std::string& topic, TopicMessageCallback callback);
 
     void enable_notifications();
 
@@ -37,16 +43,19 @@ public:
     std::vector<ConsumerOffset> get_consumer_offsets(const std::string& group_id) const;
     boost::optional<int64_t> get_topic_offset(const std::string& topic,
                                               int partition) const;
+    std::vector<std::string> get_topics() const;
 private:
     using TopicMap = std::map<cppkafka::TopicPartition, int64_t>;
     using ConsumerMap = std::unordered_map<std::string, TopicMap>;
-    using ConsumerSet = std::unordered_set<std::string>;
+    using StringSet = std::unordered_set<std::string>;
 
     ConsumerMap consumer_offsets_;
     TopicMap topic_offsets_;
-    ConsumerSet consumers_;
-    Observer<int, std::string> new_consumer_observer_;
+    StringSet consumers_;
+    StringSet topics_;
+    Observer<int, std::string> new_string_observer_;
     Observer<std::string, std::string, int, uint64_t> consumer_commit_observer_;
+    Observer<std::string, int, uint64_t> topic_message_observer_; 
     std::string new_consumer_id_;
     mutable std::mutex consumer_offsets_mutex_;
     mutable std::mutex topic_offsets_mutex_;

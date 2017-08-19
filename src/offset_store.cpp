@@ -16,46 +16,78 @@ using cppkafka::TopicPartition;
 namespace pirulo {
 
 static const int NEW_CONSUMER_ID = 0;
+static const int NEW_TOPIC_ID = 1;
 
 // TODO: don't hardcode these constants
 OffsetStore::OffsetStore()
-: consumer_commit_observer_(seconds(10)) {
+: consumer_commit_observer_(seconds(10)), topic_message_observer_(seconds(10)) {
 
 }
 
 void OffsetStore::store_consumer_offset(const string& group_id, const string& topic,
                                         int partition, uint64_t offset) {
+    bool is_new_consumer = false;
     {
         lock_guard<mutex> _(consumer_offsets_mutex_);
         consumer_offsets_[group_id][{ topic, partition }] = offset;
+        // If notifications aren't enabled, we're done
+        if (!notifications_enabled_) {
+            return;
+        }
+        is_new_consumer = consumers_.insert(group_id).second;
     }
-
-    if (!notifications_enabled_) {
-        return;
-    }
-
     // Notify that there was a new commit for this consumer group
     consumer_commit_observer_.notify(group_id, topic, partition, offset);
     // If this is a new consumer group, notify
-    if (consumers_.insert(group_id).second) {
-        new_consumer_observer_.notify(NEW_CONSUMER_ID, group_id);
+    if (is_new_consumer) {
+        new_string_observer_.notify(NEW_CONSUMER_ID, group_id);
     }
 }
 
 void OffsetStore::store_topic_offset(const string& topic, int partition,
                                      uint64_t offset) {
-    lock_guard<mutex> _(topic_offsets_mutex_);
-    topic_offsets_[{topic, partition}] = offset;
+    bool is_new_topic = false;
+    bool is_new_offset = false;
+    {
+        lock_guard<mutex> _(topic_offsets_mutex_);
+        int64_t& existing_offset = topic_offsets_[{topic, partition}];
+        is_new_offset = existing_offset != static_cast<int64_t>(offset);
+        is_new_topic = topics_.emplace(topic).second;
+        if (is_new_offset) {
+            existing_offset = offset;
+        }
+    }
+    // If notifications aren't enabled, we're done
+    if (!notifications_enabled_) {
+        return;
+    }
+
+    if (is_new_offset) {
+        topic_message_observer_.notify(topic, partition, offset);
+    }
+    if (is_new_topic) {
+        new_string_observer_.notify(NEW_TOPIC_ID, topic);
+    }
 }
 
 void OffsetStore::on_new_consumer(ConsumerCallback callback) {
-    new_consumer_observer_.observe(NEW_CONSUMER_ID, [=](int, const string& group_id) {
+    new_string_observer_.observe(NEW_CONSUMER_ID, [=](int, const string& group_id) {
         callback(group_id);
+    });
+}
+
+void OffsetStore::on_new_topic(TopicCallback callback) {
+    new_string_observer_.observe(NEW_TOPIC_ID, [=](int, const string& topic) {
+        callback(topic);
     });
 }
 
 void OffsetStore::on_consumer_commit(const string& group_id, ConsumerCommitCallback callback) {
     consumer_commit_observer_.observe(group_id, move(callback));
+}
+
+void OffsetStore::on_topic_message(const string& topic, TopicMessageCallback callback) {
+    topic_message_observer_.observe(topic, move(callback));
 }
 
 void OffsetStore::enable_notifications() {
@@ -92,6 +124,10 @@ optional<int64_t> OffsetStore::get_topic_offset(const string& topic, int partiti
         return boost::none;
     }
     return iter->second;
+}
+
+vector<string> OffsetStore::get_topics() const {
+    return vector<string>(topics_.begin(), topics_.end());
 }
 
 } // pirulo
