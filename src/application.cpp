@@ -2,11 +2,14 @@
 #include <vector>
 #include <cassert>
 #include "application.h"
+#include "detail/logging.h"
 
 using std::thread;
 using std::vector;
 
 namespace pirulo {
+
+PIRULO_CREATE_LOGGER("p.app");
 
 Application::Application(TopicOffsetReaderPtr topic_reader,
                          ConsumerOffsetReaderPtr consumer_reader)
@@ -21,6 +24,7 @@ void Application::run() {
         // Enable notifications on the offset store
         store->enable_notifications();
 
+        LOG4CXX_INFO(logger, "Initializing " << plugins_.size() << " plugins");
         // When we finish loading the __consumer_offsets topic, launch all plugins
         for (auto& plugin_ptr : plugins_) {
             plugin_ptr->launch(store);

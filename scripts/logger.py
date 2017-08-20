@@ -1,6 +1,32 @@
+import web
+import threading
+import time
+import sys
+
+class TopicsHandler:
+    PLUGIN = None
+    
+    def GET(self):
+        return TopicsHandler.PLUGIN.topics
+
 class Plugin:
     def __init__(self):
+        TopicsHandler.PLUGIN = self
         self.fd = open('/tmp/events', 'w')
+        self.topics = []
+        self.thread = threading.Thread(target=self.launch_server)
+        self.thread.start()
+
+    def launch_server(self):
+        try:
+            urls = (
+                '/topics', 'TopicsHandler'
+            )
+            sys.argv = []
+            app = web.application(urls, globals())
+            app.run()
+        except Exception as ex:
+            print 'Failed running server: ' + str(ex)
 
     def initialize(self, offset_store):
         self.offset_store = offset_store
@@ -19,6 +45,7 @@ class Plugin:
 
     def handle_new_topic(self, topic):
         self.log_message('Found topic {0}'.format(topic))
+        self.topics.append(topic)
         self.offset_store.on_topic_message(topic, self.handle_topic_message)
 
     def handle_consumer_commit(self, group_id, topic, partition, offset):

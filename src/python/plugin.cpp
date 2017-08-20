@@ -18,6 +18,22 @@ namespace pirulo {
 
 PIRULO_CREATE_LOGGER("p.python");
 
+class GILAcquirer {
+public:
+    GILAcquirer()
+    : gstate_(PyGILState_Ensure()) {
+    }
+
+    ~GILAcquirer() {
+        PyGILState_Release(gstate_);
+    }
+
+    GILAcquirer(const GILAcquirer&) = delete;
+    GILAcquirer& operator=(const GILAcquirer&) = delete;
+private:
+    PyGILState_STATE gstate_;
+};
+
 template <typename T>
 struct value_or_none {
     static PyObject* convert(const optional<T>& value) {
@@ -54,6 +70,7 @@ string handle_pyerror() {
 template <typename Functor>
 void safe_exec(const Functor& python_code) {
     try {
+        GILAcquirer _;
         python_code();
     }
     catch (const python::error_already_set& ex) {
@@ -139,13 +156,17 @@ void register_types() {
 void initialize_python() {
     static once_flag flag;
     call_once(flag, [&] {
+        PyEval_InitThreads();
         Py_Initialize();
         register_types();
+        PyEval_SaveThread();
     });
 }
 
 PythonPlugin::PythonPlugin(const string& file_path) {
     initialize_python();
+    GILAcquirer _;
+
     // Dirtiness taken from https://wiki.python.org/moin/boost.python/EmbeddingPython
     python::dict locals;
 
@@ -178,6 +199,7 @@ PythonPlugin::PythonPlugin(const string& file_path) {
 void PythonPlugin::initialize() {
     try {
         StorePtr store = get_store();
+        GILAcquirer _;
         plugin_.attr("initialize")(python::ptr(store.get()));
     }
     catch (const python::error_already_set& ex) {
