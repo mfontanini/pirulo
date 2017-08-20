@@ -2,6 +2,7 @@
 #include <cppkafka/metadata.h>
 #include "topic_offset_reader.h"
 #include "detail/logging.h"
+#include "utils/utils.h"
 
 using std::string;
 using std::move;
@@ -28,11 +29,16 @@ namespace pirulo {
 
 PIRULO_CREATE_LOGGER("p.topics");
 
+static Configuration prepare_config(Configuration config) {
+    config.set("group.id", utils::generate_group_id());
+    return config;
+}
+
 TopicOffsetReader::TopicOffsetReader(StorePtr store, size_t thread_count,
                                      ConsumerOffsetReaderPtr consumer_reader,
                                      Configuration config)
-: consumer_pool_(thread_count, move(config)),store_(move(store)), thread_pool_(thread_count),
-  consumer_offset_reader_(move(consumer_reader)) {
+: consumer_pool_(thread_count, prepare_config(move(config))),store_(move(store)),
+  thread_pool_(thread_count), consumer_offset_reader_(move(consumer_reader)) {
 
 }
 

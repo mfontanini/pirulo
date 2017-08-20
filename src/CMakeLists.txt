@@ -11,6 +11,7 @@ set(SOURCES
     
     utils/thread_pool.cpp
     utils/task_scheduler.cpp
+    utils/utils.cpp
 
     detail/logging.cpp
 

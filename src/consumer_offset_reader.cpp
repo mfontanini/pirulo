@@ -3,6 +3,7 @@
 #include "exceptions.h"
 #include "detail/memory.h"
 #include "detail/logging.h"
+#include "utils/utils.h"
 
 using std::move;
 using std::string;
@@ -19,8 +20,9 @@ namespace pirulo {
 
 PIRULO_CREATE_LOGGER("p.offsets");
 
-Configuration prepare_config(Configuration config) {
+static Configuration prepare_config(Configuration config) {
     config.set_default_topic_configuration({{ "auto.offset.reset", "smallest" }});
+    config.set("group.id", utils::generate_group_id());
     return config;
 }
 

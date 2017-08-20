@@ -66,7 +66,6 @@ int main(int argc, char* argv[]) {
     // Construct the configuration
     Configuration config = {
         { "metadata.broker.list", brokers },
-        { "group.id", "asdasdsadas" },
         // Disable auto commit
         { "enable.auto.commit", false }
     };
