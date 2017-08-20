@@ -53,15 +53,17 @@ string handle_pyerror() {
 
     PyObject *exc, *val, *tb;
     object formatted_list, formatted;
-    PyErr_Fetch(&exc,&val,&tb);
-    handle<> hexc(exc),hval(allow_null(val)),htb(allow_null(tb)); 
+    PyErr_Fetch(&exc, &val, &tb);
+    handle<> hexc(exc);
+    handle<> hval(allow_null(val));
+    handle<> htb(allow_null(tb)); 
     object traceback(import("traceback"));
     if (!tb) {
         object format_exception_only(traceback.attr("format_exception_only"));
-        formatted_list = format_exception_only(hexc,hval);
+        formatted_list = format_exception_only(hexc, hval);
     } else {
         object format_exception(traceback.attr("format_exception"));
-        formatted_list = format_exception(hexc,hval,htb);
+        formatted_list = format_exception(hexc, hval, htb);
     }
     formatted = str("\n").join(formatted_list);
     return extract<string>(formatted);
@@ -69,8 +71,8 @@ string handle_pyerror() {
 
 template <typename Functor>
 void safe_exec(const Functor& python_code) {
+    GILAcquirer _;
     try {
-        GILAcquirer _;
         python_code();
     }
     catch (const python::error_already_set& ex) {
@@ -163,7 +165,7 @@ void initialize_python() {
     });
 }
 
-PythonPlugin::PythonPlugin(const string& file_path) {
+PythonPlugin::PythonPlugin(const string& modules_path, const string& file_path) {
     initialize_python();
     GILAcquirer _;
 
@@ -173,9 +175,11 @@ PythonPlugin::PythonPlugin(const string& file_path) {
     python::object main_module = python::import("__main__");
     python::object main_namespace = main_module.attr("__dict__");
 
+    locals["modules_path"] = modules_path;
     locals["path"] = file_path;
     try {
-        python::exec("import imp\n"
+        python::exec("import imp, sys, os.path\n"
+             "sys.path.append(os.path.abspath(modules_path))\n"
              "module = imp.load_module('plugin',open(path),path,('py','U',imp.PY_SOURCE))\n",
              main_namespace, locals);
     }
@@ -197,9 +201,9 @@ PythonPlugin::PythonPlugin(const string& file_path) {
 }
 
 void PythonPlugin::initialize() {
+    GILAcquirer _;
     try {
         StorePtr store = get_store();
-        GILAcquirer _;
         plugin_.attr("initialize")(python::ptr(store.get()));
     }
     catch (const python::error_already_set& ex) {

@@ -8,7 +8,7 @@ namespace pirulo {
 
 class PythonPlugin : public PluginBase {
 public:
-    PythonPlugin(const std::string& file_path);
+    PythonPlugin(const std::string& modules_path, const std::string& file_path);
 private:
     void initialize();
 

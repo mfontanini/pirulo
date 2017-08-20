@@ -30,18 +30,19 @@ void OffsetStore::store_consumer_offset(const string& group_id, const string& to
     {
         lock_guard<mutex> _(consumer_offsets_mutex_);
         consumer_offsets_[group_id][{ topic, partition }] = offset;
-        // If notifications aren't enabled, we're done
-        if (!notifications_enabled_) {
-            return;
-        }
         is_new_consumer = consumers_.insert(group_id).second;
     }
-    // Notify that there was a new commit for this consumer group
-    consumer_commit_observer_.notify(group_id, topic, partition, offset);
+    // If notifications aren't enabled, we're done
+    if (!notifications_enabled_) {
+        return;
+    }
+
     // If this is a new consumer group, notify
     if (is_new_consumer) {
         new_string_observer_.notify(NEW_CONSUMER_ID, group_id);
     }
+    // Notify that there was a new commit for this consumer group
+    consumer_commit_observer_.notify(group_id, topic, partition, offset);
 }
 
 void OffsetStore::store_topic_offset(const string& topic, int partition,
@@ -62,11 +63,11 @@ void OffsetStore::store_topic_offset(const string& topic, int partition,
         return;
     }
 
-    if (is_new_offset) {
-        topic_message_observer_.notify(topic, partition, offset);
-    }
     if (is_new_topic) {
         new_string_observer_.notify(NEW_TOPIC_ID, topic);
+    }
+    if (is_new_offset) {
+        topic_message_observer_.notify(topic, partition, offset);
     }
 }
 
