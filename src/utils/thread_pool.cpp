@@ -7,7 +7,13 @@ using std::move;
 
 namespace pirulo {
 
-ThreadPool::ThreadPool(size_t thread_count) {
+ThreadPool::ThreadPool(size_t thread_count)
+: ThreadPool(thread_count, 0) {
+
+}
+
+ThreadPool::ThreadPool(size_t thread_count, size_t maximum_tasks)
+: maximum_tasks_(maximum_tasks) {
     for (size_t i = 0; i < thread_count; ++i) {
         threads_.emplace_back(&ThreadPool::process, this);
     }
@@ -17,10 +23,14 @@ ThreadPool::~ThreadPool() {
     stop();
 }
 
-void ThreadPool::add_task(Task task) {
+bool ThreadPool::add_task(Task task) {
     lock_guard<mutex> _(tasks_mutex_);
+    if (maximum_tasks_ > 0 && tasks_.size() >= maximum_tasks_) {
+        return false;
+    }
     tasks_.push(move(task));
     tasks_condition_.notify_one();
+    return true;
 }
 
 void ThreadPool::stop() {

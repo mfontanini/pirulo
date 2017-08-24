@@ -20,7 +20,8 @@ static const int NEW_TOPIC_ID = 1;
 
 // TODO: don't hardcode these constants
 OffsetStore::OffsetStore()
-: consumer_commit_observer_(seconds(10)), topic_message_observer_(seconds(10)) {
+: new_string_observer_(thread_pool_), consumer_commit_observer_(thread_pool_, seconds(10)),
+  topic_message_observer_(thread_pool_, seconds(10)) {
 
 }
 

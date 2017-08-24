@@ -11,7 +11,8 @@
 #include <boost/optional.hpp>
 #include <cppkafka/topic_partition.h>
 #include "consumer_offset.h"
-#include "utils/observer.h"
+#include "utils/async_observer.h"
+#include "utils/thread_pool.h"
 
 namespace pirulo {
 
@@ -45,6 +46,9 @@ public:
                                               int partition) const;
     std::vector<std::string> get_topics() const;
 private:
+    // Make sure tasks won't start piling up
+    static constexpr size_t MAXIMUM_OBSERVER_TASKS = 10000;
+
     using TopicMap = std::map<cppkafka::TopicPartition, int64_t>;
     using ConsumerMap = std::unordered_map<std::string, TopicMap>;
     using StringSet = std::unordered_set<std::string>;
@@ -53,9 +57,10 @@ private:
     TopicMap topic_offsets_;
     StringSet consumers_;
     StringSet topics_;
-    Observer<int, std::string> new_string_observer_;
-    Observer<std::string, std::string, int, uint64_t> consumer_commit_observer_;
-    Observer<std::string, int, uint64_t> topic_message_observer_; 
+    ThreadPool thread_pool_{1, MAXIMUM_OBSERVER_TASKS};
+    AsyncObserver<int, std::string> new_string_observer_;
+    AsyncObserver<std::string, std::string, int, uint64_t> consumer_commit_observer_;
+    AsyncObserver<std::string, int, uint64_t> topic_message_observer_; 
     std::string new_consumer_id_;
     mutable std::mutex consumer_offsets_mutex_;
     mutable std::mutex topic_offsets_mutex_;
