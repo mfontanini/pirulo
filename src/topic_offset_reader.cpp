@@ -54,9 +54,6 @@ void TopicOffsetReader::run() {
     LOG4CXX_INFO(logger, "Finished topic offsets cold start");
 
     monitor_new_topics();
-    while (running_) {
-        sleep_for(seconds(10));
-    }
 }
 
 void TopicOffsetReader::stop() {
