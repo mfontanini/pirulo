@@ -23,6 +23,8 @@ PIRULO_CREATE_LOGGER("p.offsets");
 static Configuration prepare_config(Configuration config) {
     config.set_default_topic_configuration({{ "auto.offset.reset", "smallest" }});
     config.set("group.id", utils::generate_group_id());
+    LOG4CXX_INFO(logger, "Using consumer " << config.get("group.id") << " for "
+                 << " consumer offset consumption");
     return config;
 }
 

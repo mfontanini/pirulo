@@ -31,6 +31,8 @@ PIRULO_CREATE_LOGGER("p.topics");
 
 static Configuration prepare_config(Configuration config) {
     config.set("group.id", utils::generate_group_id());
+    LOG4CXX_INFO(logger, "Using consumer " << config.get("group.id") << " for "
+                 << " topic offset consumption");
     return config;
 }
 
