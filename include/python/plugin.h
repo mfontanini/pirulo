@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <boost/python.hpp>
+#include <boost/python/object.hpp>
 #include "plugin_base.h"
 
 namespace pirulo {

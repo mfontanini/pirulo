@@ -16,6 +16,7 @@ set(SOURCES
     detail/logging.cpp
 
     python/plugin.cpp
+    python/helpers.cpp
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
