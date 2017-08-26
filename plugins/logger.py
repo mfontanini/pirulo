@@ -2,7 +2,7 @@ import web
 import threading
 import time
 import sys
-from base_plugin import BasePlugin
+from pirulo import Handler
 
 class TopicsHandler:
     def GET(self):
@@ -12,11 +12,11 @@ class ConsumersHandler:
     def GET(self):
         return Plugin.INSTANCE.consumers
 
-class Plugin(BasePlugin):
+class Plugin(Handler):
     INSTANCE = None
 
     def __init__(self):
-        BasePlugin.__init__(self)
+        Handler.__init__(self)
         Plugin.INSTANCE = self
         self.fd = open('/tmp/events', 'w')
         self.topics = []
@@ -24,8 +24,7 @@ class Plugin(BasePlugin):
         self.thread = threading.Thread(target=self.launch_server)
         self.thread.start()
 
-    def initialize(self, offset_store):
-        BasePlugin.initialize(self, offset_store)
+    def handle_initialize(self, offset_store):
         self.subscribe_to_consumers()
         self.subscribe_to_consumer_commits()
         self.subscribe_to_topics()

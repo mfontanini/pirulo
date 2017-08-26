@@ -17,6 +17,8 @@ set(SOURCES
 
     python/plugin.cpp
     python/helpers.cpp
+    python/handler.cpp
+    python/api.cpp
 )
 
 include_directories(${PROJECT_SOURCE_DIR}/include)

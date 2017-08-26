@@ -60,8 +60,8 @@ PythonPlugin::PythonPlugin(const string& modules_path, const string& file_path) 
 void PythonPlugin::initialize() {
     helpers::GILAcquirer _;
     try {
-        StorePtr store = get_store();
-        plugin_.attr("initialize")(python::ptr(store.get()));
+        const StorePtr& store = get_store();
+        plugin_.attr("initialize")(store);
     }
     catch (const python::error_already_set& ex) {
         LOG4CXX_ERROR(logger, "Error initializing plugin: "
