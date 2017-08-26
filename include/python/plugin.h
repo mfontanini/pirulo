@@ -5,6 +5,7 @@
 #include "plugin_base.h"
 
 namespace pirulo {
+namespace api {
 
 class PythonPlugin : public PluginBase {
 public:
@@ -15,4 +16,5 @@ private:
     boost::python::object plugin_;
 };
 
+} // api
 } // pirulo

@@ -16,6 +16,7 @@ using std::once_flag;
 namespace python = boost::python;
 
 namespace pirulo {
+namespace api {
 namespace helpers {
 
 PIRULO_CREATE_LOGGER("p.python");
@@ -63,4 +64,5 @@ void initialize_python() {
 }
 
 } // helpers
+} // api
 } // pirulo

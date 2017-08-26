@@ -6,6 +6,7 @@
 #include <pystate.h>
 
 namespace pirulo {
+namespace api {
 namespace helpers {
 
 class GILAcquirer {
@@ -35,4 +36,5 @@ void safe_exec(const log4cxx::LoggerPtr& logger, const Functor& python_code) {
 }
 
 } // helpers
+} // api
 } // pirulo

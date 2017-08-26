@@ -19,6 +19,7 @@ using boost::optional;
 namespace python = boost::python;
 
 namespace pirulo {
+namespace api {
 
 PIRULO_CREATE_LOGGER("p.python");
 
@@ -123,4 +124,5 @@ void register_types() {
         ;
 }
 
+} // api
 } // pirulo

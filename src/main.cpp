@@ -26,7 +26,7 @@ using pirulo::Application;
 using pirulo::ConsumerOffsetReader;
 using pirulo::TopicOffsetReader;
 using pirulo::OffsetStore;
-using pirulo::PythonPlugin;
+using pirulo::api::PythonPlugin;
 using pirulo::logging::register_console_logger;
 
 namespace po = boost::program_options;

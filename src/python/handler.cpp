@@ -8,6 +8,7 @@ using std::bind;
 using namespace std::placeholders;
 
 namespace pirulo {
+namespace api {
 
 void Handler::initialize(const shared_ptr<OffsetStore>& store) {
     offset_store_ = store;
@@ -68,4 +69,5 @@ void Handler::on_topic_message(const string& topic, int partition, int64_t offse
     get_override("handle_topic_message")(topic, partition, offset);
 }
 
+} // api
 } // pirulo

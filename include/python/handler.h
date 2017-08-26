@@ -4,6 +4,7 @@
 #include "offset_store.h"
 
 namespace pirulo {
+namespace api {
 
 class Handler : public boost::python::wrapper<Handler> {
 public:
@@ -26,4 +27,5 @@ private:
     bool track_topic_messages_{false};
 };
 
+} // api
 } // pirulo
