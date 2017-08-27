@@ -40,12 +40,15 @@ void on_signal(int) {
 int main(int argc, char* argv[]) {
     string brokers;
     string group_id;
+    unsigned threads;
 
     po::options_description options("Options");
     options.add_options()
         ("help,h",       "produce this help message")
         ("brokers,b",    po::value<string>(&brokers)->required(), 
                          "the kafka broker list")
+        ("threads,t",    po::value<unsigned>(&threads)->default_value(2),
+                         "amount of threads to use for topic metadata reloading")
         ;
 
     po::variables_map vm;
@@ -72,7 +75,8 @@ int main(int argc, char* argv[]) {
 
     auto store = make_shared<OffsetStore>();
     auto consumer_reader = make_shared<ConsumerOffsetReader>(store, seconds(10), config);
-    auto topic_reader = make_shared<TopicOffsetReader>(store, 2, consumer_reader, config);
+    auto topic_reader = make_shared<TopicOffsetReader>(store, threads, consumer_reader,
+                                                       config);
 
     Application app(move(topic_reader), move(consumer_reader));
     // app.add_plugin(unique_ptr<PythonPlugin>(new PythonPlugin("../plugins",
