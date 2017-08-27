@@ -43,11 +43,11 @@ void LagTrackerHandler::handle_initialize() {
 }
 
 void LagTrackerHandler::handle_new_consumer(const string& group_id) {
-
+    Handler::handle_new_consumer(group_id);
 }
 
 void LagTrackerHandler::handle_new_topic(const string& topic) {
-
+    Handler::handle_new_topic(topic);
 }
 
 void LagTrackerHandler::handle_consumer_commit(const string& group_id, const string& topic,
@@ -57,6 +57,7 @@ void LagTrackerHandler::handle_consumer_commit(const string& group_id, const str
     if (info.offset != -1) {
         handle_lag_update(topic, partition, group_id, max<int64_t>(0, info.offset - offset));
     }
+    Handler::handle_consumer_commit(group_id, topic, partition, offset);
 }
 
 void LagTrackerHandler::handle_topic_message(const string& topic, int partition, int64_t offset) {
@@ -67,6 +68,7 @@ void LagTrackerHandler::handle_topic_message(const string& topic, int partition,
         const uint64_t lag = max<int64_t>(0, offset - consumer_offset_pair.second);
         handle_lag_update(topic, partition, group_id, lag);
     }
+    Handler::handle_topic_message(topic, partition, offset);
 }
 
 } // api

@@ -15,6 +15,8 @@
 
 using std::string;
 using std::vector;
+using std::bind;
+using std::ref;
 using std::shared_ptr;
 
 using boost::optional;
@@ -29,10 +31,18 @@ PIRULO_CREATE_LOGGER("p.python");
 template <typename Method, typename... Args>
 void exec_method(const Method& functor, const Args&... args) {
     if (functor) {
-        helpers::safe_exec(logger, std::bind(functor, std::ref(args)...));
+        helpers::safe_exec(logger, bind(functor, ref(args)...));
     }
     else {
         LOG4CXX_DEBUG(logger, "Not executing callback as it's None");
+    }
+}
+
+template <typename... Args>
+void exec_method(python::object& object, const char* name, const Args&... args) {
+    if (PyObject_HasAttrString(object.ptr(), name)) {
+        const auto functor = object.attr(name);
+        helpers::safe_exec(logger, bind(functor, ref(args)...)); 
     }
 }
 
@@ -40,7 +50,7 @@ class HandlerWrapper : public Handler,
                        public python::wrapper<Handler> {
 private:
     void handle_initialize() {
-        exec_method(get_override("handle_initialize"), get_offset_store());
+        exec_method(get_override("handle_initialize"));
     }
 
     void handle_new_consumer(const string& group_id) {
@@ -71,12 +81,12 @@ public:
 private:
     void handle_initialize() {
         LagTrackerHandler::handle_initialize();
-        exec_method(self_.attr("handle_initialize"), get_offset_store());
+        exec_method(self_, "handle_initialize");
     }
 
     void handle_lag_update(const string& topic, int partition,
                            const string& group_id, uint64_t consumer_lag) {
-        exec_method(self_.attr("handle_lag_update"), topic, partition, group_id, consumer_lag);
+        exec_method(self_, "handle_lag_update", topic, partition, group_id, consumer_lag);
     }
 
     python::object self_;
@@ -87,9 +97,11 @@ BOOST_PYTHON_MODULE(pirulo) {
     using python::bases;
     using python::init;
     using python::no_init;
+    using python::return_internal_reference;
 
     class_<HandlerWrapper, boost::noncopyable>("Handler")
         .def("initialize", &Handler::initialize)
+        .def("get_offset_store", &Handler::get_offset_store, return_internal_reference<>())
         .def("subscribe_to_consumers", &Handler::subscribe_to_consumers)
         .def("subscribe_to_consumer_commits", &Handler::subscribe_to_consumer_commits)
         .def("subscribe_to_topics", &Handler::subscribe_to_topics)

@@ -27,7 +27,7 @@ class Plugina(Handler):
         self.thread = threading.Thread(target=self.launch_server)
         self.thread.start()
 
-    def handle_initialize(self, offset_store):
+    def handle_initialize(self):
         self.subscribe_to_consumers()
         self.subscribe_to_consumer_commits()
         self.subscribe_to_topics()
