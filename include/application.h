@@ -23,9 +23,9 @@ public:
 private:
     void process();
 
+    std::vector<PluginPtr> plugins_;
     TopicOffsetReaderPtr topic_reader_;
     ConsumerOffsetReaderPtr consumer_reader_;
-    std::vector<PluginPtr> plugins_;
 };
 
 } // pirulo

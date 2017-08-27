@@ -38,7 +38,8 @@ PythonPlugin::PythonPlugin(const string& modules_path, const string& file_path) 
     try {
         python::exec("import imp, sys, os.path\n"
              "sys.path.append(os.path.abspath(modules_path))\n"
-             "module = imp.load_module('plugin',open(path),path,('py','U',imp.PY_SOURCE))\n",
+             "module_name = os.path.basename(path)[:-3]\n"
+             "module = imp.load_module(module_name,open(path),path,('py','U',imp.PY_SOURCE))\n",
              main_namespace, locals);
     }
     catch (const python::error_already_set& ex) {

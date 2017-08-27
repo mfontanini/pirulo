@@ -12,7 +12,7 @@ namespace api {
 
 void Handler::initialize(const shared_ptr<OffsetStore>& store) {
     offset_store_ = store;
-    get_override("handle_initialize")(store);
+    handle_initialize();
 }
 
 void Handler::subscribe_to_consumers() {
@@ -52,21 +52,46 @@ void Handler::subscribe_to_topic_message() {
     }
 }
 
+const shared_ptr<OffsetStore>& Handler::get_offset_store() const {
+    return offset_store_;
+}
+
+void Handler::handle_initialize() {
+
+}
+
+void Handler::handle_new_consumer(const string& group_id) {
+
+}
+
+void Handler::handle_new_topic(const string& topic) {
+
+}
+
+void Handler::handle_consumer_commit(const string& group_id, const string& topic,
+                                     int partition, int64_t offset) {
+
+}
+
+void Handler::handle_topic_message(const string& topic, int partition, int64_t offset) {
+
+}
+
 void Handler::on_new_consumer(const string& group_id) {
-    get_override("handle_new_consumer")(group_id);
+    handle_new_consumer(group_id);
 }
 
 void Handler::on_new_topic(const string& topic) {
-    get_override("handle_new_topic")(topic);
+    handle_new_topic(topic);
 }
 
 void Handler::on_consumer_commit(const string& group_id, const string& topic,
                                  int partition, int64_t offset) {
-    get_override("handle_consumer_commit")(group_id, topic, partition, offset);
+    handle_consumer_commit(group_id, topic, partition, offset);
 }
 
 void Handler::on_topic_message(const string& topic, int partition, int64_t offset) {
-    get_override("handle_topic_message")(topic, partition, offset);
+    handle_topic_message(topic, partition, offset);
 }
 
 } // api

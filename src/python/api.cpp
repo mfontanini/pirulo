@@ -4,10 +4,13 @@
 #include <boost/python/object.hpp>
 #include <boost/python/str.hpp>
 #include <boost/python/import.hpp>
+#include <boost/python/wrapper.hpp>
+#include <boost/python/call_method.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include "python/api.h"
 #include "python/helpers.h"
 #include "python/handler.h"
+#include "python/lag_tracker_handler.h"
 #include "detail/logging.h"
 
 using std::string;
@@ -23,13 +26,79 @@ namespace api {
 
 PIRULO_CREATE_LOGGER("p.python");
 
+template <typename Method, typename... Args>
+void exec_method(const Method& functor, const Args&... args) {
+    if (functor) {
+        helpers::safe_exec(logger, std::bind(functor, std::ref(args)...));
+    }
+    else {
+        LOG4CXX_DEBUG(logger, "Not executing callback as it's None");
+    }
+}
+
+class HandlerWrapper : public Handler,
+                       public python::wrapper<Handler> {
+private:
+    void handle_initialize() {
+        exec_method(get_override("handle_initialize"), get_offset_store());
+    }
+
+    void handle_new_consumer(const string& group_id) {
+        exec_method(get_override("handle_new_consumer"), group_id);
+    }
+
+    void handle_new_topic(const string& topic) {
+        exec_method(get_override("handle_new_topic"), topic);
+    }
+
+    void handle_consumer_commit(const string& group_id, const string& topic,
+                                int partition, int64_t offset) {
+        exec_method(get_override("handle_consumer_commit"), group_id, topic, partition, offset);
+    }
+
+    void handle_topic_message(const string& topic, int partition, int64_t offset) {
+        exec_method(get_override("handle_topic_message"), topic, partition, offset);
+    }
+};
+
+class LagTrackerHandlerWrapper : public LagTrackerHandler,
+                                 public python::wrapper<LagTrackerHandler> {
+public:
+    LagTrackerHandlerWrapper(PyObject* self)
+    : self_(python::handle<>(self)) {
+
+    }
+private:
+    void handle_initialize() {
+        LagTrackerHandler::handle_initialize();
+        exec_method(self_.attr("handle_initialize"), get_offset_store());
+    }
+
+    void handle_lag_update(const string& topic, int partition,
+                           const string& group_id, uint64_t consumer_lag) {
+        exec_method(self_.attr("handle_lag_update"), topic, partition, group_id, consumer_lag);
+    }
+
+    python::object self_;
+};
+
 BOOST_PYTHON_MODULE(pirulo) {
-    python::class_<Handler>("Handler")
+    using python::class_;
+    using python::bases;
+    using python::init;
+    using python::no_init;
+
+    class_<HandlerWrapper, boost::noncopyable>("Handler")
         .def("initialize", &Handler::initialize)
         .def("subscribe_to_consumers", &Handler::subscribe_to_consumers)
         .def("subscribe_to_consumer_commits", &Handler::subscribe_to_consumer_commits)
         .def("subscribe_to_topics", &Handler::subscribe_to_topics)
         .def("subscribe_to_topic_message", &Handler::subscribe_to_topic_message)
+    ;
+
+    class_<LagTrackerHandlerWrapper, bases<Handler>, LagTrackerHandlerWrapper,
+           boost::noncopyable>("LagTrackerHandler")
+
     ;
 }
 

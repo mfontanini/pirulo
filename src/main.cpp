@@ -75,8 +75,10 @@ int main(int argc, char* argv[]) {
     auto topic_reader = make_shared<TopicOffsetReader>(store, 2, consumer_reader, config);
 
     Application app(move(topic_reader), move(consumer_reader));
+    // app.add_plugin(unique_ptr<PythonPlugin>(new PythonPlugin("../plugins",
+    //                                                         "../plugins/logger.py")));
     app.add_plugin(unique_ptr<PythonPlugin>(new PythonPlugin("../plugins",
-                                                             "../plugins/logger.py")));
+                                                             "../plugins/lag_exporter.py")));
 
     signal_handler = [&] {
         app.stop();

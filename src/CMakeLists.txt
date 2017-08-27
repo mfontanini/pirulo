@@ -18,6 +18,7 @@ set(SOURCES
     python/plugin.cpp
     python/helpers.cpp
     python/handler.cpp
+    python/lag_tracker_handler.cpp
     python/api.cpp
 )
 
