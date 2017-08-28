@@ -2,7 +2,7 @@ import web
 import threading
 import time
 import sys
-from pirulo import Handler, LagTrackerHandler
+from pirulo import Handler
 
 class TopicsHandler:
     def GET(self):
@@ -12,10 +12,7 @@ class ConsumersHandler:
     def GET(self):
         return Plugin.INSTANCE.consumers
 
-class Plugin(LagTrackerHandler):
-    pass
-
-class Plugina(Handler):
+class Plugin(Handler):
     INSTANCE = None
 
     def __init__(self):
@@ -71,3 +68,6 @@ class Plugina(Handler):
             partition,
             offset
         ))
+
+def create_plugin():
+    return Plugin()

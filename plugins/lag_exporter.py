@@ -7,3 +7,6 @@ class Plugin(LagTrackerHandler):
 
     def handle_lag_update(self, topic, partition, group_id, lag):
         print 'Consumer {0} has {1} lag on {2}/{3}'.format(group_id, lag, topic, partition)
+
+def create_plugin():
+    return Plugin()

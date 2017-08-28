@@ -49,8 +49,8 @@ PythonPlugin::PythonPlugin(const string& modules_path, const string& file_path) 
     }
 
     try {
-        python::object plugin_class = locals["module"].attr("Plugin");
-        plugin_ = plugin_class();
+        python::object plugin_factory = locals["module"].attr("create_plugin");
+        plugin_ = plugin_factory();
     }
     catch (const python::error_already_set& ex) {
         LOG4CXX_ERROR(logger, "Error instantiating Plugin classs on module " << file_path
