@@ -10,6 +10,7 @@ namespace api {
 class PythonPlugin : public PluginBase {
 public:
     PythonPlugin(const std::string& modules_path, const std::string& file_path);
+    ~PythonPlugin();
 private:
     void initialize();
 

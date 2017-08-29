@@ -59,6 +59,11 @@ PythonPlugin::PythonPlugin(const string& modules_path, const string& file_path) 
     }
 }
 
+PythonPlugin::~PythonPlugin() {
+    helpers::GILAcquirer _;
+    plugin_ = {};
+}
+
 void PythonPlugin::initialize() {
     helpers::GILAcquirer _;
     try {
